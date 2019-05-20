@@ -1,0 +1,84 @@
+---
+title: "NCBI_SRA_file_download"
+author: "Phil Morin"
+date: "5/15/2019"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Determine the Sequence Read Archive (SRA) files for a NCBI BioProject, and download all of them using the NCBI SRAtoolkit function "fastq-dump", 
+This requires that SRAtoolkit is installed (see https://ncbi.github.io/sra-tools/install_config.html)
+
+```{r}
+# Bioproject ID
+bioproject <- "SRP090345"
+
+# path to SRAtoolkit directory
+SRAtk_dir <- "~/Documents/Applications_local/sratoolkit.2.9.6-1-mac64/bin/"
+# SRAtk_dir <- "C:\Users\phil.morin\Desktop\Programs_local\sratoolkit.2.9.6-1-win64_1\bin\"
+```
+
+
+# Get SRA Run Info for a BioProject using wget from Linux system:
+wget 'http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?save=efetch&rettype=runinfo&db=sra&term=PRJNA223640' -O - | tee SraRunInfo.csv
+ This saves a .csv file with the SRP number (for multple runs in a project)
+ use the SRP number below to get the SRA file info and ftp commands
+
+```{r}
+source('http://bioconductor.org/biocLite.R')
+# biocLite("BiocUpgrade") # if upgrade message appears saying an upgrade is available.
+#biocLite('SRAdb')
+# or: # devtools::install_github("seandavi/SRAdb")
+library(SRAdb)
+#biocLite('DBI')
+library(DBI)
+
+
+######## only need to get SRA dbfile once; it's 2.5GB, so it takes a long time to load. After loaded, the file decompresses to ~32GB; copy the path to the saved file and set srafile = <path>.
+# srafile_get = getSRAdbFile() 
+      # write to file for future use
+# write.csv(srafile_get, file="srafile_path.csv", row.names = FALSE, col.names = FALSE, quote = TRUE)
+########
+
+# set the path to the SRADBfile and extract the SRR list for the specified project. This uses the file "srafile_path.csv" saved above.
+srafile = read.csv("srafile_path.txt", header = FALSE)
+srafile1 <- as.character(srafile$V1)
+con = dbConnect(RSQLite::SQLite(), srafile1)
+SRRlist <- listSRAfile(bioproject, con)
+write.csv(SRRlist, "NPho_SRR_list.csv")
+
+
+# extract SRR column to create list of SRR files to get
+SRRrun <- SRRlist$run
+
+# or set up a short run based on specified list of SRR files
+SRRshortlist <- c("SRR4292233", "SRR4292235")
+
+```
+
+
+# Run Fastq-dump from SRAtoolkit (from specified directory on computer, using bash)
+SRAtoolkit commands in ~/Documents/Applications_local/sratoolkit.2.9.6-1-mac64/bin
+```{r}
+
+# create bash command to run 'fastq-dump' from SRAtoolkit directory
+# test on short list of files.
+#   fq_dump_srr <- paste0(STRtk_dir,"fastq-dump"," --gzip --skip-technical --dumpbase --split-files --clip ", SRRshortlist)
+
+# or get all files from the project
+fq_dump_srr <- paste0(STRtk_dir," --gzip --skip-technical --dumpbase --split-files --clip ", SRRrun)
+
+# run fastq-dump for each ERR. this splits the SRR file into R1 and R2 fastq file.
+system(fq_dump_srr)
+
+```
+
+## Save data
+```{r}
+save.image(file=paste0("Bioproject_",bioproject,"_SRA_download.Rdata"))
+```
+
+
