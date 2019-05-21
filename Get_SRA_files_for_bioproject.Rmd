@@ -66,10 +66,10 @@ SRAtoolkit commands in ~/Documents/Applications_local/sratoolkit.2.9.6-1-mac64/b
 
 # create bash command to run 'fastq-dump' from SRAtoolkit directory
 # test on short list of files.
-#   fq_dump_srr <- paste0(STRtk_dir,"fastq-dump"," --gzip --skip-technical --dumpbase --split-files --clip ", SRRshortlist)
+#   fq_dump_srr <- paste0(SRAtk_dir,"fastq-dump --gzip --skip-technical --dumpbase --split-files --clip ", SRRshortlist)
 
 # or get all files from the project
-fq_dump_srr <- paste0(STRtk_dir," --gzip --skip-technical --dumpbase --split-files --clip ", SRRrun)
+fq_dump_srr <- paste0(SRAtk_dir,"fastq-dump --gzip --skip-technical --dumpbase --split-files --clip ", SRRrun)
 
 # run fastq-dump for each ERR. this splits the SRR file into R1 and R2 fastq file.
 system(fq_dump_srr)
